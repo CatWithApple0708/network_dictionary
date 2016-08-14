@@ -11,4 +11,4 @@ server_process.o:server_process.h server_process.c
 
 
 clean:
-	rm *.o
+	rm *.o text

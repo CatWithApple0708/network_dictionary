@@ -44,7 +44,8 @@ typedef enum wrong_table_enum{
   WT_PASSWD_WRONG,
   WT_USER_NAME_REDUDANT,
   WT_NETWORK,
-  WT_EXIT
+  WT_EXIT,
+  WT_NOT_REGISTERTED
 }wrong_table_enum_t;// number table
 
 static char *wrong_table_string[]={
@@ -54,6 +55,7 @@ static char *wrong_table_string[]={
   "User name has been registered",
   "Please restart net work",
   "Exit success",
+  "Is not registered",
   NULL
 };
 
