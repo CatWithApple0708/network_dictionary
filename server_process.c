@@ -40,7 +40,7 @@ extern int server_process(int readfd,int writefd){
 
       default:printf("DEBUG: 未知switch 错误\n"); break;
     }
-
+    printf("DEBUG:user login flag %d\n",user.login_flag);
     whileflag=wrong_process(writefd,wrong_number);
   }
   while(whileflag);
@@ -104,7 +104,7 @@ login_process(sqlite3 *db,char *order_buff,USER *user)
   strcpy( &(user->name[0]),buff[1]);
   strcpy( &(user->passwd[0]),buff[2]);
 
-  printf("%s:%s",user->name,user->passwd);
+  printf("user name:%s user passwd:%s",user->name,user->passwd);
 
   if(login(user,db)<0)
     return WT_PASSWD_WRONG;
