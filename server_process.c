@@ -1,4 +1,5 @@
 #include "server_process.h"
+#include "dbuser.h"
 
 extern int server_process(int readfd,int writefd){
 
@@ -9,6 +10,7 @@ extern int server_process(int readfd,int writefd){
 
   //open database;
   sqlite3 *db=NULL;
+  Sqlite3_open(DB_FILE_PATH,&db);
 
   //open file
   int fd=1;
@@ -22,7 +24,7 @@ extern int server_process(int readfd,int writefd){
     {
       case OT_LOGIN: wrong_number=login_process(db,order_buff,&user); break;
 
-      case OT_REGIS: wrong_number=regis_process(db,order_buff,&user); break;
+      case OT_REGIS: wrong_number=regis_process(db,order_buff); break;
 
       case OT_FIND: wrong_number=find_process(fd,order_buff,&user); break;
 
@@ -45,6 +47,7 @@ extern int server_process(int readfd,int writefd){
 
   //关闭数据库资源 关闭文件
   // close(fd);
+  sqlite3_close(db);
 
   return 1;
 
@@ -81,14 +84,65 @@ static wrong_table_enum_t
 login_process(sqlite3 *db,char *order_buff,USER *user)
 {
   printf("DEBUG:login_process\n");
+  char *buff[3];
+  buff[0]=strtok(order_buff," ");
+  buff[1]=strtok(NULL," ");
+  buff[2]=strtok(NULL," ");
 
-  wrong_table_enum_t ret=WT_RIGHT;
-  return ret;
+  if (buff[0]==NULL||buff[1]==NULL||buff[2]==NULL)
+  {
+    return WT_FORMAT_WRONG;
+  }
+  if (strlen(buff[1])>=20)
+  {
+    return WT_USER_NAME_TOO_LONG;
+  }
+  if (strlen(buff[2])>=30)
+  {
+    return WT_PASSWD_TOO_LONG;
+  }
+  strcpy( &(user->name[0]),buff[1]);
+  strcpy( &(user->passwd[0]),buff[2]);
+
+  printf("%s:%s",user->name,user->passwd);
+
+  if(login(user,db)<0)
+    return WT_PASSWD_WRONG;
+
+  return WT_RIGHT;
 }
 
 static wrong_table_enum_t
-regis_process(sqlite3 *db,char *order_buff,const USER *user)
+regis_process(sqlite3 *db,char *order_buff)
 {
+  USER user;
+  char *buff[3];
+  buff[0]=strtok(order_buff," ");
+  buff[1]=strtok(NULL," ");
+  buff[2]=strtok(NULL," ");
+
+  if (buff[0]==NULL||buff[1]==NULL||buff[2]==NULL)
+  {
+    return WT_FORMAT_WRONG;
+  }
+  if (strlen(buff[1])>=20)
+  {
+    return WT_USER_NAME_TOO_LONG;
+  }
+  if (strlen(buff[2])>=30)
+  {
+    return WT_PASSWD_TOO_LONG;
+  }
+
+  strcpy( &(user.name[0]),buff[1]);
+  strcpy( &(user.passwd[0]),buff[2]);
+
+  int regis_ret=regis(&user,db);
+  if (regis_ret!=0)
+  {
+    return WT_USER_NAME_REDUDANT;
+  }
+
   printf("DEBUG:regis_process\n");
   wrong_table_enum_t ret=WT_RIGHT;
   return ret;
@@ -182,6 +236,25 @@ network_write(int fildes, void *buf, size_t nbyte)
   }
   return ret;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

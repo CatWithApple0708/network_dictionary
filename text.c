@@ -1,9 +1,8 @@
 #include <stdio.h>
+#include "dbuser.h"
 #include "server_process.h"
-
-int main(int argc, char const *argv[])
+int main(int argc, char* argv[])
 {
-	printf("this is main\n");
-	server_process(0,1);
-	return 0;
+   server_process(0,1);
+   return 0;
 }

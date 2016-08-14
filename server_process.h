@@ -8,8 +8,7 @@
 
 
 #define ORDER_MAX_LEN 100
-#define DB_FILE_PATH "."
-
+#define DB_FILE_PATH "user.db"
 // 命令
 
 typedef enum order_table_enum{
@@ -45,7 +44,10 @@ typedef enum wrong_table_enum{
   WT_USER_NAME_REDUDANT,
   WT_NETWORK,
   WT_EXIT,
-  WT_NOT_REGISTERTED
+  WT_NOT_REGISTERTED,
+  WT_SYSTEM_CRASH,
+  WT_PASSWD_TOO_LONG,
+  WT_USER_NAME_TOO_LONG
 }wrong_table_enum_t;// number table
 
 static char *wrong_table_string[]={
@@ -56,18 +58,24 @@ static char *wrong_table_string[]={
   "Please restart net work",
   "Exit success",
   "Is not registered",
+  "server is bad",
+  "passwd must be smaller than 30 letters",
+  "username must be smaller than 20 letters",
   NULL
 };
 
 
 // 用户结构体
 
+#ifndef USER_S
+#define USER_S
 typedef struct user
 {
   short login_flag;  //当用户登录之后这个位置设置为1
   char  name[20];
   char  passwd[30];
 }USER;
+#endif
 
 
 
@@ -78,7 +86,7 @@ static wrong_table_enum_t
 login_process(sqlite3 *db,char *order_buff,USER *user);
 
 static wrong_table_enum_t
-regis_process(sqlite3 *db,char *order_buff,const USER *user);
+regis_process(sqlite3 *db,char *order_buff);
 
 static wrong_table_enum_t
 find_process(int fd,char *order_buff,const USER *user);
