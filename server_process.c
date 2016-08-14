@@ -1,123 +1,6 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <sqlite3.h>
+#include "server_process.h"
 
-
-#define ORDER_MAX_LEN 100
-#define DB_FILE_PATH "."
-
-
-
-typedef enum order_table_enum{
-OT_LOGIN=0,
-OT_REGIS,
-OT_FIND,
-OT_HISTORY,
-OT_HELP,
-OT_EXIT,
-//wrong return no specific order string
-OT_ORDER_WRONG,
-OT_NETWORK_WRONG
-}order_table_enum_t;// number table
-char *order_table_string[]={
-  "login ",
-  "regis ",
-  "find ",
-  "history",
-  "help",
-  "exit",
-  NULL
-};
-
-//单词 重复:redudant
-typedef enum wrong_table_enum{
-  WT_RIGHT=0,
-  WT_FORMAT_WRONG,
-  WT_PASSWD_WRONG,
-  WT_USER_NAME_REDUDANT,
-  WT_NETWORK,
-  WT_EXIT
-}wrong_table_enum_t;// number table
-
-char *wrong_table_string[]={
-  "",
-  "order format_wrong",
-  "passwd or username is wrong",
-  "User name has been registered",
-  "Please restart net work",
-  "Exit success",
-  NULL
-};
-
-typedef struct user
-{
-  short login_flag;
-  char  name[20];
-  char  passwd[30];
-}USER;
-
-int
-server_process(int readfd,int writefd);
-
-wrong_table_enum_t
-login_process(sqlite3 *db,char *order_buff,USER *user);
-
-wrong_table_enum_t
-regis_process(sqlite3 *db,char *order_buff,const USER *user);
-
-wrong_table_enum_t
-find_process(int fd,char *order_buff,const USER *user);
-
-wrong_table_enum_t
-history_process(sqlite3 *db,char *order_buff,const USER *user);
-
-wrong_table_enum_t
-help_process(int writefd);
-
-
-
-
-order_table_enum_t
-get_order(int readfd,char *order_buff,int len);
-
-wrong_table_enum_t
-wrong_process(int writefd,wrong_table_enum_t wrong_number);
-
-
-
-//two layer
-static ssize_t
-network_read(int fildes, void *buf, size_t nbyte);
-
-
-static ssize_t
-network_write(int fildes, void *buf, size_t nbyte);
-
-int equal_order(const char *order,const char *buff);
-
-
-
-
-
-int main(int argc, const char *argv[])
-{
-
-
-
-  server_process(0,1);
-
-  return 0;
-}
-
-
-
-
-
-
-
-
-int server_process(int readfd,int writefd){
+extern int server_process(int readfd,int writefd){
 
 
   USER user={-1,"",""};
@@ -168,7 +51,7 @@ int server_process(int readfd,int writefd){
 }
 
 
-order_table_enum_t get_order(int readfd,char *order_buff,int len)
+static order_table_enum_t get_order(int readfd,char *order_buff,int len)
 {
   order_table_enum_t ret=OT_LOGIN;
   //如果网络读入错误，返回网络读入错误参数
@@ -194,7 +77,7 @@ order_table_enum_t get_order(int readfd,char *order_buff,int len)
 
 
 
-wrong_table_enum_t
+static wrong_table_enum_t
 login_process(sqlite3 *db,char *order_buff,USER *user)
 {
   printf("DEBUG:login_process\n");
@@ -203,7 +86,7 @@ login_process(sqlite3 *db,char *order_buff,USER *user)
   return ret;
 }
 
-wrong_table_enum_t
+static wrong_table_enum_t
 regis_process(sqlite3 *db,char *order_buff,const USER *user)
 {
   printf("DEBUG:regis_process\n");
@@ -212,7 +95,7 @@ regis_process(sqlite3 *db,char *order_buff,const USER *user)
 }
 
 
-wrong_table_enum_t
+static wrong_table_enum_t
 find_process(int fd,char *order_buff,const USER *user)
 {
   printf("DEBUG:find_process\n");
@@ -220,7 +103,7 @@ find_process(int fd,char *order_buff,const USER *user)
   return ret;
 }
 
-wrong_table_enum_t
+static wrong_table_enum_t
 history_process(sqlite3 *db,char *order_buff,const USER *user)
 {
   printf("DEBUG:history_process\n");
@@ -228,7 +111,7 @@ history_process(sqlite3 *db,char *order_buff,const USER *user)
   return ret;
 }
 
-wrong_table_enum_t
+static wrong_table_enum_t
 help_process(int writefd)
 {
   printf("DEBUG:help_process\n");
@@ -237,7 +120,7 @@ help_process(int writefd)
 }
 
 
-wrong_table_enum_t
+static wrong_table_enum_t
 wrong_process(int writefd,wrong_table_enum_t wrong_number)
 {
   network_write(  writefd,
@@ -257,7 +140,8 @@ wrong_process(int writefd,wrong_table_enum_t wrong_number)
 
 
 //two layer
-int equal_order(const char *order,const char *buff)
+static int
+equal_order(const char *order,const char *buff)
 {
   int i=0;
   for (i = 0; i < strlen(order); ++i)
@@ -270,8 +154,6 @@ int equal_order(const char *order,const char *buff)
 
   return 1;
 }
-
-
 
 
 //network
