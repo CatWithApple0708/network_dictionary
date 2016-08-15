@@ -1,6 +1,7 @@
 #include "dbuser.h"
 #include <sqlite3.h>
-
+#include <time.h>
+#include <string.h>
 
 int
 Sqlite3_open(const char *filename, sqlite3 **ppDb)
@@ -82,11 +83,16 @@ login( USER *user,sqlite3*db)
 int
 insert_history(sqlite3*db,const USER *user,const char *history)
 {
+   time_t timer =time(NULL);
+   char time_buff[30];
+   strncpy(&time_buff[0],ctime(&timer),sizeof(time_buff));
+   time_buff[strlen(&time_buff[0])-1]='\0';
+
    if (user->login_flag==HASLOGINED)
    {
    char buff[200];
    char *table_name=HISTORY_TABLE_NAME;
-   sprintf(buff,"insert into %s values('%s','%s');",table_name,user->name,history);
+   sprintf(buff,"insert into %s values('%s','%s  %s');",table_name,user->name,time_buff,history);
    // printf("%s\n", buff);
    int ret = Sqlite3_exec(db,buff,NULL,NULL);
    if (ret!=SQLITE_OK)

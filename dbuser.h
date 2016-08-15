@@ -50,8 +50,8 @@ login(USER *user,sqlite3*db);
 
 
 extern int
-insert_history(sqlite3*db, const USER *user,const char *history);
 
+insert_history(sqlite3*db, const USER *user,const char *word);
 
 #endif
 

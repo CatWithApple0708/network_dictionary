@@ -13,8 +13,8 @@ extern int server_process(int readfd,int writefd){
   Sqlite3_open(DB_FILE_PATH,&db);
 
   //open file
-  int fd=1;
-
+  FILE*filedb=NULL;
+  filedb=fopen(DIC_FILE_PATH,"r");
 
   int whileflag=1;
   do
@@ -26,7 +26,7 @@ extern int server_process(int readfd,int writefd){
 
       case OT_REGIS: wrong_number=regis_process(db,order_buff); break;
 
-      case OT_FIND: wrong_number=find_process(fd,order_buff,&user); break;
+      case OT_FIND: wrong_number=find_process(filedb,writefd,db,order_buff,&user); break;
 
       case OT_HISTORY: wrong_number=history_process(db,order_buff,&user); break;
 
@@ -40,13 +40,13 @@ extern int server_process(int readfd,int writefd){
 
       default:printf("DEBUG: 未知switch 错误\n"); break;
     }
-    printf("DEBUG:user login flag %d\n",user.login_flag);
+    fseek(filedb,0,SEEK_SET);
     whileflag=wrong_process(writefd,wrong_number);
   }
   while(whileflag);
 
   //关闭数据库资源 关闭文件
-  // close(fd);
+  fclose(filedb);
   sqlite3_close(db);
 
   return 1;
@@ -64,6 +64,7 @@ static order_table_enum_t get_order(int readfd,char *order_buff,int len)
       ret=OT_NETWORK_WRONG;
       return ret;
     }
+    order_buff[read_ret]='\0';
 
   //comp order
   for (int i = 0; order_table_string[i] != NULL; ++i)
@@ -104,7 +105,7 @@ login_process(sqlite3 *db,char *order_buff,USER *user)
   strcpy( &(user->name[0]),buff[1]);
   strcpy( &(user->passwd[0]),buff[2]);
 
-  printf("user name:%s user passwd:%s",user->name,user->passwd);
+  fprintf(stderr,"DEBUG:user name:%s user passwd:%s\n",user->name,user->passwd);
 
   if(login(user,db)<0)
     return WT_PASSWD_WRONG;
@@ -150,10 +151,34 @@ regis_process(sqlite3 *db,char *order_buff)
 
 
 static wrong_table_enum_t
-find_process(int fd,char *order_buff,const USER *user)
+find_process(FILE * dictionary,int writefd,sqlite3*db, char *order_buff,const USER *user)
 {
   printf("DEBUG:find_process\n");
-  wrong_table_enum_t ret=WT_RIGHT;
+  if (user->login_flag!=HASLOGINED)
+  {
+    return WT_NOT_REGISTERTED;
+  }
+
+  char *p[3];
+  p[0]=strtok(order_buff," ");
+  p[1]=strtok(NULL," ");
+  p[2]=strtok(NULL," ");
+  if (p[0]==NULL||p[1]==NULL)
+  {
+    return WT_FORMAT_WRONG;
+  }
+  fprintf(stderr,"DEBUG:order:%s word:%s\n", p[0],p[1]);
+
+  char description[1024];
+  wrong_table_enum_t ret=find(p[1],description,sizeof(description)-2,dictionary);
+  if (ret==WT_RIGHT)
+  {
+    insert_history(db,user,p[1]);
+    network_write(writefd, description,strlen(description));
+    // network_write(writefd,\n,1);
+  }
+  // printf("here\n");
+
   return ret;
 }
 
@@ -169,6 +194,7 @@ static wrong_table_enum_t
 help_process(int writefd)
 {
   printf("DEBUG:help_process\n");
+  printf("指令:\nregis username passwd\nlogin username passwd\nfind word\nhistory(没有实现 但histoy可以插入 查看没有实现)\nhelp\n");
   wrong_table_enum_t ret=WT_RIGHT;
   return ret;
 }
@@ -209,6 +235,46 @@ equal_order(const char *order,const char *buff)
   return 1;
 }
 
+/*
+@
+@src word
+@des description
+@len the length of des
+系统错误直接输出到stderr且返回－1  用户错误 返回相应的错误编号
+ */
+
+
+static wrong_table_enum_t
+find(const char *word,char *description,size_t len,FILE *file)
+{
+
+  char buff[1024];
+  char *p[3];
+  while(1)
+  {
+    char * ret=fgets(buff,1023,file);
+    if (ret==NULL)
+       return WT_NOSUCH_WORD;
+    int string_len=strlen(ret);
+
+     p[0]=strtok(buff," ");
+     p[1]=strtok(NULL," ");
+
+     if (p[1]!=NULL&&p[1]+strlen(p[1])!=p[0]+string_len)
+     {
+       *( p[1]+strlen(p[1]))=' ';
+     }
+
+
+    if (strcmp(p[0],word) != 0)
+      continue;
+    else
+      if( strncpy(description,p[1],len) != description )
+        {fprintf(stderr, "the len of des is not vary big!\n");return WT_SYSTEM_CRASH;}
+      else
+        { return WT_RIGHT;}
+  }
+}
 
 //network
 
@@ -221,7 +287,7 @@ network_read(int fildes, void *buf, size_t nbyte)
   {
     perror("network_read wrong");
   }
-  return ret;
+  return ret-1;
 }
 
 static ssize_t
@@ -236,6 +302,8 @@ network_write(int fildes, void *buf, size_t nbyte)
   }
   return ret;
 }
+
+
 
 
 

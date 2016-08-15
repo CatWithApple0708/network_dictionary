@@ -9,6 +9,7 @@
 
 #define ORDER_MAX_LEN 100
 #define DB_FILE_PATH "user.db"
+#define DIC_FILE_PATH "dict.txt"
 // 命令
 
 typedef enum order_table_enum{
@@ -47,7 +48,8 @@ typedef enum wrong_table_enum{
   WT_NOT_REGISTERTED,
   WT_SYSTEM_CRASH,
   WT_PASSWD_TOO_LONG,
-  WT_USER_NAME_TOO_LONG
+  WT_USER_NAME_TOO_LONG,
+  WT_NOSUCH_WORD
 }wrong_table_enum_t;// number table
 
 static char *wrong_table_string[]={
@@ -61,6 +63,7 @@ static char *wrong_table_string[]={
   "server is bad",
   "passwd must be smaller than 30 letters",
   "username must be smaller than 20 letters",
+  "No such word",
   NULL
 };
 
@@ -89,8 +92,7 @@ static wrong_table_enum_t
 regis_process(sqlite3 *db,char *order_buff);
 
 static wrong_table_enum_t
-find_process(int fd,char *order_buff,const USER *user);
-
+find_process(FILE * dictionary,int writefd,sqlite3*db, char *order_buff,const USER *user);
 static wrong_table_enum_t
 history_process(sqlite3 *db,char *order_buff,const USER *user);
 
@@ -119,7 +121,8 @@ network_write(int fildes, void *buf, size_t nbyte);
 static int
 equal_order(const char *order,const char *buff);
 
-
+static wrong_table_enum_t
+find(const char *word,char *description,size_t len,FILE *file);
 
 #endif
 
